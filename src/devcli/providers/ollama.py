@@ -36,7 +36,7 @@ class OllamaProvider(BaseProvider):
     def is_available(self) -> bool:
         """
         Check if Ollama is running and accessible.
-
+        
         Returns:
             True if Ollama is running, False otherwise
         """
@@ -46,7 +46,7 @@ class OllamaProvider(BaseProvider):
             return response.status_code == 200
         except (requests.ConnectionError, requests.Timeout):
             return False
-
+    
     @staticmethod
     def list_models() -> list[dict]:
         """
@@ -71,7 +71,7 @@ class OllamaProvider(BaseProvider):
             )
         except requests.RequestException as e:
             raise RuntimeError(f"Error listing Ollama models: {e}")
-
+    
     def chat(self, message: str, system_prompt: Optional[str] = None) -> str:
         """
         Send a message to Ollama and get a response.

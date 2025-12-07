@@ -9,9 +9,11 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.markdown import Markdown
+from pathlib import Path
 from devcli import __version__
 from devcli import config
 from devcli.providers.ollama import OllamaProvider
+from devcli.core.context import ContextBuilder
 
 # Create the main Typer app
 # Typer is a library that makes building CLIs super easy
@@ -81,33 +83,103 @@ def hello(
 
 
 @app.command()
-def init() -> None:
+def init(
+    path: Path = typer.Argument(
+        None,
+        help="Project path (defaults to current directory)"
+    ),
+    force: bool = typer.Option(False, "--force", "-f", help="Reinitialize if already done")
+) -> None:
     """
-    Initialize DevCLI in your project (coming soon!)
+    Initialize DevCLI in your project.
     
-    This will eventually:
-    - Scan your project files
-    - Build a context understanding
-    - Set up configuration
+    This scans your project files and builds an understanding
+    that can be used when asking questions.
+    
+    Example:
+      devcli init
+      devcli init /path/to/project
+      devcli init --force  # Re-scan
     """
-    console.print("[yellow]⚠️  Init command coming soon![/yellow]")
-    console.print("\nWhat it will do:")
-    console.print("  • Scan your project structure")
-    console.print("  • Index your codebase")
-    console.print("  • Set up local config")
+    # Use current directory if not specified
+    project_path = path or Path.cwd()
+    project_path = project_path.resolve()
+    
+    # Check if path exists
+    if not project_path.exists():
+        console.print(f"[red]✗[/red] Path does not exist: {project_path}")
+        return
+    
+    if not project_path.is_dir():
+        console.print(f"[red]✗[/red] Path is not a directory: {project_path}")
+        return
+    
+    # Check if already initialized
+    context_file = project_path / ".devcli" / "context.json"
+    if context_file.exists() and not force:
+        console.print(f"[yellow]⚠️  Project already initialized![/yellow]")
+        console.print(f"[dim]Context file: {context_file}[/dim]")
+        console.print("\n[dim]Use --force to re-scan[/dim]")
+        return
+    
+    console.print(f"\n[bold blue]Initializing DevCLI in:[/bold blue] {project_path}")
+    console.print()
+    
+    # Build context
+    with console.status("[bold blue]Scanning project files...", spinner="dots"):
+        try:
+            builder = ContextBuilder(project_path)
+            context = builder.build_context(max_files=100)
+        except Exception as e:
+            console.print(f"[red]✗[/red] Error scanning project: {e}")
+            return
+    
+    # Save context
+    context_dir = project_path / ".devcli"
+    context_dir.mkdir(exist_ok=True)
+    
+    try:
+        builder.save_context(context, context_file)
+    except Exception as e:
+        console.print(f"[red]✗[/red] Error saving context: {e}")
+        return
+    
+    # Show results
+    console.print("[green]✓[/green] Project initialized successfully!\n")
+    
+    table = Table(show_header=False, box=None)
+    table.add_column("Label", style="cyan")
+    table.add_column("Value", style="green")
+    
+    table.add_row("Project", context.name)
+    table.add_row("Files scanned", str(context.total_files))
+    table.add_row("Lines of code", f"{context.total_lines:,}")
+    table.add_row("Context saved", str(context_file))
+    
+    console.print(table)
+    
+    console.print("\n[dim]Now you can ask questions about your code:[/dim]")
+    console.print('  devcli ask "what does this project do?"')
+    console.print('  devcli ask "where is the main logic?"')
 
 
 @app.command()
 def ask(
     question: str = typer.Argument(..., help="Your question"),
-    model: str = typer.Option(None, "--model", "-m", help="Model to use (defaults to config)")
+    model: str = typer.Option(None, "--model", "-m", help="Model to use (defaults to config)"),
+    no_context: bool = typer.Option(False, "--no-context", help="Don't use project context")
 ) -> None:
     """
     Ask a question and get an AI response!
     
+    If you've run 'devcli init', this will include your project
+    context when answering questions.
+    
     Example:
       devcli ask "What is Python?"
-      devcli ask "Explain Docker in simple terms" --model deepseek-r1
+      devcli ask "What does this project do?"
+      devcli ask "Where is the authentication logic?"
+      devcli ask "Explain Docker" --no-context
     """
     # Get config to find model details
     cfg = config.get_config()
@@ -142,6 +214,32 @@ def ask(
         console.print(f"  3. Pull model: ollama pull {model_cfg.model_name}")
         return
     
+    # Try to load project context
+    project_context = None
+    if not no_context:
+        context_file = Path.cwd() / ".devcli" / "context.json"
+        if context_file.exists():
+            try:
+                builder = ContextBuilder(Path.cwd())
+                project_context = builder.load_context(context_file)
+                console.print(f"[dim]Using project context ({project_context.total_files} files)[/dim]")
+            except Exception as e:
+                console.print(f"[yellow]⚠️  Could not load project context: {e}[/yellow]")
+    
+    # Build the full question with context
+    if project_context:
+        # Create context-aware prompt
+        context_prompt = project_context.to_prompt(max_tokens=cfg.max_tokens // 2)
+        full_question = f"""{context_prompt}
+
+---
+
+User Question: {question}
+
+Please answer based on the project context above when relevant."""
+    else:
+        full_question = question
+    
     # Show what we're doing
     console.print(f"[dim]Using model: {model_name} ({model_cfg.model_name})[/dim]")
     console.print()
@@ -150,8 +248,8 @@ def ask(
     with console.status(f"[bold blue]Thinking...", spinner="dots"):
         try:
             response = provider.chat(
-                message=question,
-                system_prompt="You are a helpful AI assistant. Be concise and clear."
+                message=full_question,
+                system_prompt="You are a helpful AI coding assistant. Be concise and clear. When answering questions about code, provide specific file names and line numbers when possible."
             )
         except Exception as e:
             console.print(f"[red]✗[/red] Error: {e}")
@@ -229,7 +327,7 @@ def model_add(
 ) -> None:
     """
     Add a new model to your configuration.
-
+    
     Example:
       devcli model-add my-llama --provider ollama --model llama3.1
       devcli model-add gpt4 --provider openai --model gpt-4 --api-key sk-...
@@ -239,7 +337,7 @@ def model_add(
         console.print(f"[green]✓[/green] Added model: {name}")
         console.print(f"  Provider: {provider}")
         console.print(f"  Model: {model_name}")
-
+        
     except Exception as e:
         console.print(f"[red]✗[/red] Error: {e}")
 
