@@ -2,7 +2,25 @@
 
 ## 🎉 Complete & Working Features
 
-### 1. Configuration System ✅
+### 1. Interactive Chat Mode ✅ (NEW!)
+- Just type `devcli` to start chatting
+- Conversational back-and-forth
+- In-chat commands (/model, /nocontext, /reset)
+- Auto-loads project context
+- Switch models without leaving chat
+
+**Usage:**
+```bash
+devcli                          # Start interactive mode!
+> what does this project do?
+[AI responds...]
+> /model deepseek-r1           # Switch model
+> how does scanner.py work?
+[AI responds...]
+> exit
+```
+
+### 2. Configuration System ✅
 - Save/load user preferences (`~/.devcli/config.json`)
 - Type-safe with Pydantic validation
 - Store model configurations
@@ -77,10 +95,10 @@ devcli ask "question" --model deepseek-r1   # Use specific model
 
 ## 📊 Project Stats
 
-**Lines of Code:** ~2,500+
-**Files:** 20+
-**Commands:** 7 working commands
-**Documentation:** 4 comprehensive guides
+**Lines of Code:** ~3,000+
+**Files:** 22+
+**Commands:** 8 working commands (7 explicit + interactive mode)
+**Documentation:** 5 comprehensive guides
 
 **Project Structure:**
 ```
@@ -103,6 +121,17 @@ devcli/
 ---
 
 ## 🚀 Complete Command Reference
+
+### Interactive Mode (Recommended!)
+```bash
+devcli                          # Start interactive chat
+> your question here
+> /model deepseek-r1           # Switch model
+> /nocontext                   # Toggle project context
+> /reset                       # Clear history
+> help                         # Show commands
+> exit                         # Quit
+```
 
 ### Getting Started
 ```bash

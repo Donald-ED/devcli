@@ -27,10 +27,182 @@ app = typer.Typer(
 console = Console()
 
 
+def interactive_chat() -> None:
+    """
+    Start an interactive chat session.
+
+    This is called when you run 'devcli' with no arguments.
+    It's like a REPL for chatting with AI!
+    """
+    # Get config
+    cfg = config.get_config()
+
+    # Check if we have a default model configured
+    if not cfg.models:
+        console.print("[red]✗[/red] No models configured!")
+        console.print("\n[yellow]Add a model first:[/yellow]")
+        console.print("  devcli model-add llama3 --provider ollama --model llama3.1")
+        console.print("  devcli models-sync  # Or auto-discover")
+        return
+
+    model_name = cfg.default_model
+    if model_name not in cfg.models:
+        model_name = list(cfg.models.keys())[0]  # Use first available
+
+    model_cfg = cfg.models[model_name]
+
+    # Only Ollama supported for now
+    if model_cfg.provider != "ollama":
+        console.print(f"[red]✗[/red] Interactive mode only supports Ollama provider")
+        console.print(f"[yellow]Current default model uses: {model_cfg.provider}[/yellow]")
+        return
+
+    # Create provider
+    provider = OllamaProvider(model_cfg.model_name)
+
+    # Check if Ollama is running
+    if not provider.is_available():
+        console.print("[red]✗[/red] Cannot connect to Ollama!")
+        console.print("\n[yellow]Make sure Ollama is running:[/yellow]")
+        console.print("  1. Install from: https://ollama.ai")
+        console.print("  2. Start: ollama serve")
+        console.print(f"  3. Pull model: ollama pull {model_cfg.model_name}")
+        return
+
+    # Try to load project context
+    project_context = None
+    context_file = Path.cwd() / ".devcli" / "context.json"
+    if context_file.exists():
+        try:
+            builder = ContextBuilder(Path.cwd())
+            project_context = builder.load_context(context_file)
+        except Exception:
+            pass  # Silently fail, not critical
+
+    # Welcome message
+    console.print()
+    console.print(Panel(
+        f"[bold blue]Welcome to DevCLI![/bold blue] 🤖\n\n"
+        f"Model: [cyan]{model_name}[/cyan] ({model_cfg.model_name})\n"
+        f"Project context: [cyan]{'✓ loaded' if project_context else '✗ none (run: devcli init)'}[/cyan]\n\n"
+        f"[dim]Commands:[/dim]\n"
+        f"  [cyan]exit[/cyan] or [cyan]quit[/cyan] - Exit chat\n"
+        f"  [cyan]clear[/cyan] - Clear screen\n"
+        f"  [cyan]help[/cyan] - Show help\n"
+        f"  [cyan]/model <name>[/cyan] - Switch model\n"
+        f"  [cyan]/nocontext[/cyan] - Toggle project context\n\n"
+        f"Just type your question and press Enter!",
+        title="[bold]DevCLI Interactive Chat[/bold]",
+        border_style="blue"
+    ))
+    console.print()
+
+    # Chat loop
+    use_context = project_context is not None
+    conversation_history = []
+
+    while True:
+        try:
+            # Get user input
+            user_input = console.input("[bold green]>[/bold green] ").strip()
+
+            if not user_input:
+                continue
+
+            # Handle special commands
+            if user_input.lower() in ['exit', 'quit', 'q']:
+                console.print("\n[cyan]Goodbye! 👋[/cyan]\n")
+                break
+
+            if user_input.lower() == 'clear':
+                console.clear()
+                continue
+
+            if user_input.lower() == 'help':
+                console.print("\n[bold]Available Commands:[/bold]")
+                console.print("  [cyan]exit/quit[/cyan] - Exit chat")
+                console.print("  [cyan]clear[/cyan] - Clear screen")
+                console.print("  [cyan]/model <name>[/cyan] - Switch to different model")
+                console.print("  [cyan]/nocontext[/cyan] - Toggle project context on/off")
+                console.print("  [cyan]/reset[/cyan] - Reset conversation history")
+                console.print()
+                continue
+
+            if user_input.startswith('/model '):
+                new_model = user_input[7:].strip()
+                if new_model in cfg.models:
+                    model_name = new_model
+                    model_cfg = cfg.models[model_name]
+                    provider = OllamaProvider(model_cfg.model_name)
+                    conversation_history = []  # Reset history
+                    console.print(f"[green]✓[/green] Switched to model: {model_name}\n")
+                else:
+                    console.print(f"[red]✗[/red] Model '{new_model}' not found")
+                    console.print(f"[dim]Available: {', '.join(cfg.models.keys())}[/dim]\n")
+                continue
+
+            if user_input.lower() == '/nocontext':
+                use_context = not use_context
+                status = "enabled" if use_context else "disabled"
+                console.print(f"[green]✓[/green] Project context {status}\n")
+                continue
+
+            if user_input.lower() == '/reset':
+                conversation_history = []
+                console.print("[green]✓[/green] Conversation history reset\n")
+                continue
+
+            # Build the message with context if enabled
+            if use_context and project_context:
+                context_prompt = project_context.to_prompt(max_tokens=cfg.max_tokens // 2)
+                full_question = f"""{context_prompt}
+
+---
+
+User Question: {user_input}
+
+Please answer based on the project context above when relevant."""
+            else:
+                full_question = user_input
+
+            # Get AI response
+            console.print()
+            with console.status("[bold blue]Thinking...", spinner="dots"):
+                try:
+                    response = provider.chat(
+                        message=full_question,
+                        system_prompt="You are a helpful AI coding assistant. Be concise and clear. When answering questions about code, provide specific file names and line numbers when possible."
+                    )
+                except Exception as e:
+                    console.print(f"[red]✗[/red] Error: {e}\n")
+                    continue
+
+            # Display response
+            console.print(Markdown(response))
+            console.print()
+
+            # Add to history (for future conversation features)
+            conversation_history.append({
+                'user': user_input,
+                'assistant': response
+            })
+
+        except KeyboardInterrupt:
+            console.print("\n\n[cyan]Use 'exit' to quit[/cyan]\n")
+            continue
+        except EOFError:
+            console.print("\n[cyan]Goodbye! 👋[/cyan]\n")
+            break
+
+
+# Rich makes our terminal output beautiful with colors and formatting
+console = Console()
+
+
 def version_callback(value: bool) -> None:
     """
     This function runs when someone types: devcli --version
-    
+
     The 'callback' pattern is common in CLI tools - it's a function
     that gets called when a flag is used.
     """
@@ -39,8 +211,9 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         None,
         "--version",
@@ -52,11 +225,16 @@ def main(
 ) -> None:
     """
     DevCLI - Your AI coding companion for free! 🤖
-    
-    This is the main callback that runs for every command.
-    Think of it as the "entry point" before specific commands run.
+
+    Run with no arguments to start interactive chat mode.
+    Or use specific commands like 'init', 'ask', 'config-show', etc.
     """
-    pass
+    # If a subcommand was invoked, don't start interactive mode
+    if ctx.invoked_subcommand is not None:
+        return
+
+    # No subcommand - start interactive chat!
+    interactive_chat()
 
 
 @app.command()
@@ -65,7 +243,7 @@ def hello(
 ) -> None:
     """
     Say hello! This is just a test command to make sure everything works.
-    
+
     Try it:
       devcli hello
       devcli hello --name Alice
@@ -92,10 +270,10 @@ def init(
 ) -> None:
     """
     Initialize DevCLI in your project.
-    
+
     This scans your project files and builds an understanding
     that can be used when asking questions.
-    
+
     Example:
       devcli init
       devcli init /path/to/project
@@ -104,16 +282,16 @@ def init(
     # Use current directory if not specified
     project_path = path or Path.cwd()
     project_path = project_path.resolve()
-    
+
     # Check if path exists
     if not project_path.exists():
         console.print(f"[red]✗[/red] Path does not exist: {project_path}")
         return
-    
+
     if not project_path.is_dir():
         console.print(f"[red]✗[/red] Path is not a directory: {project_path}")
         return
-    
+
     # Check if already initialized
     context_file = project_path / ".devcli" / "context.json"
     if context_file.exists() and not force:
@@ -121,10 +299,10 @@ def init(
         console.print(f"[dim]Context file: {context_file}[/dim]")
         console.print("\n[dim]Use --force to re-scan[/dim]")
         return
-    
+
     console.print(f"\n[bold blue]Initializing DevCLI in:[/bold blue] {project_path}")
     console.print()
-    
+
     # Build context
     with console.status("[bold blue]Scanning project files...", spinner="dots"):
         try:
@@ -133,31 +311,31 @@ def init(
         except Exception as e:
             console.print(f"[red]✗[/red] Error scanning project: {e}")
             return
-    
+
     # Save context
     context_dir = project_path / ".devcli"
     context_dir.mkdir(exist_ok=True)
-    
+
     try:
         builder.save_context(context, context_file)
     except Exception as e:
         console.print(f"[red]✗[/red] Error saving context: {e}")
         return
-    
+
     # Show results
     console.print("[green]✓[/green] Project initialized successfully!\n")
-    
+
     table = Table(show_header=False, box=None)
     table.add_column("Label", style="cyan")
     table.add_column("Value", style="green")
-    
+
     table.add_row("Project", context.name)
     table.add_row("Files scanned", str(context.total_files))
     table.add_row("Lines of code", f"{context.total_lines:,}")
     table.add_row("Context saved", str(context_file))
-    
+
     console.print(table)
-    
+
     console.print("\n[dim]Now you can ask questions about your code:[/dim]")
     console.print('  devcli ask "what does this project do?"')
     console.print('  devcli ask "where is the main logic?"')
@@ -171,10 +349,10 @@ def ask(
 ) -> None:
     """
     Ask a question and get an AI response!
-    
+
     If you've run 'devcli init', this will include your project
     context when answering questions.
-    
+
     Example:
       devcli ask "What is Python?"
       devcli ask "What does this project do?"
@@ -183,28 +361,28 @@ def ask(
     """
     # Get config to find model details
     cfg = config.get_config()
-    
+
     # Determine which model to use
     model_name = model or cfg.default_model
-    
+
     if model_name not in cfg.models:
         console.print(f"[red]✗[/red] Model '{model_name}' not found in config")
         console.print(f"[dim]Available models: {', '.join(cfg.models.keys())}[/dim]")
         console.print(f"\n[yellow]Tip:[/yellow] Add it with:")
         console.print(f"  devcli model-add {model_name} --provider ollama --model {model_name}")
         return
-    
+
     model_cfg = cfg.models[model_name]
-    
+
     # Only Ollama is supported for now
     if model_cfg.provider != "ollama":
         console.print(f"[red]✗[/red] Provider '{model_cfg.provider}' not supported yet")
         console.print("[yellow]Currently only 'ollama' provider is supported[/yellow]")
         return
-    
+
     # Create provider
     provider = OllamaProvider(model_cfg.model_name)
-    
+
     # Check if Ollama is running
     if not provider.is_available():
         console.print("[red]✗[/red] Cannot connect to Ollama!")
@@ -213,7 +391,7 @@ def ask(
         console.print("  2. Start it: ollama serve")
         console.print(f"  3. Pull model: ollama pull {model_cfg.model_name}")
         return
-    
+
     # Try to load project context
     project_context = None
     if not no_context:
@@ -225,7 +403,7 @@ def ask(
                 console.print(f"[dim]Using project context ({project_context.total_files} files)[/dim]")
             except Exception as e:
                 console.print(f"[yellow]⚠️  Could not load project context: {e}[/yellow]")
-    
+
     # Build the full question with context
     if project_context:
         # Create context-aware prompt
@@ -239,11 +417,11 @@ User Question: {question}
 Please answer based on the project context above when relevant."""
     else:
         full_question = question
-    
+
     # Show what we're doing
     console.print(f"[dim]Using model: {model_name} ({model_cfg.model_name})[/dim]")
     console.print()
-    
+
     # Ask the question with a spinner
     with console.status(f"[bold blue]Thinking...", spinner="dots"):
         try:
@@ -254,7 +432,7 @@ Please answer based on the project context above when relevant."""
         except Exception as e:
             console.print(f"[red]✗[/red] Error: {e}")
             return
-    
+
     # Display the response in a nice panel
     console.print(
         Panel(
@@ -269,23 +447,23 @@ Please answer based on the project context above when relevant."""
 def config_show() -> None:
     """
     Show current configuration.
-    
+
     Displays all your settings from ~/.devcli/config.json
     """
     cfg = config.get_config()
-    
+
     # Create a nice table to show the config
     table = Table(title="DevCLI Configuration", show_header=True)
     table.add_column("Setting", style="cyan")
     table.add_column("Value", style="green")
-    
+
     table.add_row("Default Model", cfg.default_model)
     table.add_row("Max Tokens", str(cfg.max_tokens))
     table.add_row("Available Models", ", ".join(cfg.models.keys()))
     table.add_row("Config File", str(config.CONFIG_FILE))
-    
+
     console.print(table)
-    
+
     # Show detailed model info
     console.print("\n[bold]Model Details:[/bold]")
     for name, model_cfg in cfg.models.items():
@@ -299,7 +477,7 @@ def config_set(
 ) -> None:
     """
     Update a configuration value.
-    
+
     Examples:
       devcli config-set default_model deepseek-r1
       devcli config-set max_tokens 4000
@@ -310,10 +488,10 @@ def config_set(
             config.update_config(**{key: int(value)})
         else:
             config.update_config(**{key: value})
-        
+
         console.print(f"[green]✓[/green] Updated {key} = {value}")
         console.print(f"\n[dim]Config saved to: {config.CONFIG_FILE}[/dim]")
-        
+
     except Exception as e:
         console.print(f"[red]✗[/red] Error: {e}")
 
@@ -327,7 +505,7 @@ def model_add(
 ) -> None:
     """
     Add a new model to your configuration.
-    
+
     Example:
       devcli model-add my-llama --provider ollama --model llama3.1
       devcli model-add gpt4 --provider openai --model gpt-4 --api-key sk-...
@@ -337,7 +515,7 @@ def model_add(
         console.print(f"[green]✓[/green] Added model: {name}")
         console.print(f"  Provider: {provider}")
         console.print(f"  Model: {model_name}")
-        
+
     except Exception as e:
         console.print(f"[red]✗[/red] Error: {e}")
 
