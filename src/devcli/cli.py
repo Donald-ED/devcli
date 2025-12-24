@@ -167,12 +167,46 @@ def interactive_chat() -> None:
             
             if user_input.startswith('/read '):
                 fp = user_input[6:].strip()
-                console.print(f"\n[bold]{fp}:[/bold]\n")
-                content = file_ops.read_file(Path(fp), add_line_numbers=True)
-                if content:
-                    console.print(content + "\n")
+                
+                # Smart file search
+                found_file = None
+                
+                # Try direct path first
+                direct_path = Path(fp)
+                if direct_path.exists():
+                    found_file = direct_path
                 else:
-                    console.print("[red]✗[/red] Could not read\n")
+                    # Search in project
+                    search_name = Path(fp).name
+                    matches = list(Path.cwd().rglob(f"*{search_name}"))
+                    
+                    # Filter out common ignore patterns
+                    matches = [m for m in matches if not any(
+                        skip in str(m) for skip in ['__pycache__', '.git', 'node_modules', '.egg-info', 'venv']
+                    )]
+                    
+                    if len(matches) == 1:
+                        found_file = matches[0]
+                    elif len(matches) > 1:
+                        console.print(f"\n[yellow]Multiple files found matching '{search_name}':[/yellow]")
+                        for i, match in enumerate(matches[:10], 1):
+                            rel = match.relative_to(Path.cwd()) if match.is_relative_to(Path.cwd()) else match
+                            console.print(f"  {i}. {rel}")
+                        console.print(f"\n[dim]Use full path like: /read {matches[0].relative_to(Path.cwd())}[/dim]\n")
+                        continue
+                    else:
+                        console.print(f"[red]✗[/red] File not found: {fp}")
+                        console.print(f"[dim]Try '/files' to see available files, or use full path[/dim]\n")
+                        continue
+                
+                if found_file:
+                    rel_path = found_file.relative_to(Path.cwd()) if found_file.is_relative_to(Path.cwd()) else found_file
+                    console.print(f"\n[bold]{rel_path}:[/bold]\n")
+                    content = file_ops.read_file(found_file, add_line_numbers=True)
+                    if content:
+                        console.print(content + "\n")
+                    else:
+                        console.print(f"[red]✗[/red] Could not read file\n")
                 continue
             
             if user_input.lower() == '/reset':
