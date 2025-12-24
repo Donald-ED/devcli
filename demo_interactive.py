@@ -5,7 +5,6 @@ Demo: Interactive Chat Mode
 Shows what DevCLI's interactive mode looks like.
 """
 import sys
-
 sys.path.insert(0, 'src')
 
 from rich.console import Console
@@ -15,9 +14,9 @@ import time
 
 console = Console()
 
-print("\n" + "=" * 70)
+print("\n" + "="*70)
 print("🎭 DEMO: DevCLI Interactive Mode")
-print("=" * 70 + "\n")
+print("="*70 + "\n")
 
 # Simulate starting interactive mode
 console.print("[bold cyan]$ devcli[/bold cyan]\n")
@@ -80,7 +79,7 @@ for conv in conversations:
     # User input
     console.print(f"[bold green]>[/bold green] {conv['user']}")
     time.sleep(0.3)
-
+    
     if conv.get('system'):
         # System message
         console.print(f"\n{conv['system']}\n")
@@ -96,7 +95,7 @@ for conv in conversations:
 console.print("[bold green]>[/bold green] exit")
 console.print("\n[cyan]Goodbye! 👋[/cyan]\n")
 
-print("=" * 70)
+print("="*70)
 print("✨ Interactive mode makes DevCLI feel like a real conversation!")
 print("   Just type 'devcli' and start asking questions.")
-print("=" * 70 + "\n")
+print("="*70 + "\n")

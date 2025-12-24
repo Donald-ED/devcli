@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DevCLI - The Free, Local-First AI Coding Assistant. Claude Code's UI + Free Models.">
+    <title>DevCLI - Free AI Coding Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            padding: 60px 20px;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hero .tagline {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            opacity: 0.95;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Features Section */
+        .features {
+            background: white;
+            padding: 80px 20px;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            color: #333;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            padding: 30px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .feature-card .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* Code Demo Section */
+        .demo {
+            background: #1a1a2e;
+            color: white;
+            padding: 80px 20px;
+        }
+
+        .demo h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+        }
+
+        .terminal {
+            background: #0f0f1e;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .terminal-line {
+            margin-bottom: 10px;
+        }
+
+        .prompt {
+            color: #4ade80;
+        }
+
+        .command {
+            color: #60a5fa;
+        }
+
+        .output {
+            color: #a0aec0;
+        }
+
+        /* Comparison Table */
+        .comparison {
+            background: white;
+            padding: 80px 20px;
+        }
+
+        .comparison h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+        }
+
+        table {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: #667eea;
+            color: white;
+        }
+
+        th, td {
+            padding: 20px;
+            text-align: left;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .checkmark {
+            color: #27c93f;
+            font-size: 1.5rem;
+        }
+
+        .cross {
+            color: #ff5f56;
+            font-size: 1.5rem;
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a2e;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero .tagline {
+                font-size: 1.2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>DevCLI</h1>
+            <p class="tagline">The Free, Local-First AI Coding Assistant</p>
+            <p class="subtitle">Claude Code's UI + Free Open-Source Models = DevCLI</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/yourusername/devcli" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/yourusername/devcli" class="btn btn-secondary">View on GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2>Why DevCLI?</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">🆓</div>
+                    <h3>Completely Free</h3>
+                    <p>No API costs, no subscriptions, no hidden fees. Use powerful models like DeepSeek, Llama, and Qwen without spending a dime.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">🔒</div>
+                    <h3>Privacy First</h3>
+                    <p>Your code never leaves your machine. No telemetry, no tracking, no cloud uploads. Complete privacy guaranteed.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">💬</div>
+                    <h3>Interactive Chat</h3>
+                    <p>Just type <code>devcli</code> and start chatting. Switch models, toggle context, and get instant answers.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">🎯</div>
+                    <h3>Project-Aware</h3>
+                    <p>Understands your entire codebase. Get answers with specific file names and line numbers.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">🤖</div>
+                    <h3>Auto-Discovery</h3>
+                    <p>Automatically finds and configures your Ollama models. No manual setup required!</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">📊</div>
+                    <h3>Three Output Modes</h3>
+                    <p>Normal (beautiful), Quiet (pipeable), JSON (automatable). Perfect for any workflow.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo">
+        <div class="container">
+            <h2>See It In Action</h2>
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-dot dot-red"></div>
+                    <div class="terminal-dot dot-yellow"></div>
+                    <div class="terminal-dot dot-green"></div>
+                </div>
+                <div class="terminal-line">
+                    <span class="prompt">$</span> <span class="command">devcli</span>
+                </div>
+                <div class="terminal-line output">Welcome to DevCLI! 🤖</div>
+                <div class="terminal-line output">Model: llama3.1</div>
+                <div class="terminal-line output">Project context: ✓ loaded</div>
+                <div class="terminal-line"><br></div>
+                <div class="terminal-line">
+                    <span class="prompt">></span> <span class="command">what does this project do?</span>
+                </div>
+                <div class="terminal-line output">[AI explains your project...]</div>
+                <div class="terminal-line"><br></div>
+                <div class="terminal-line">
+                    <span class="prompt">></span> <span class="command">where is the auth code?</span>
+                </div>
+                <div class="terminal-line output">The authentication logic is in:</div>
+                <div class="terminal-line output">  - src/auth/jwt.py (lines 15-45)</div>
+                <div class="terminal-line output">  - src/middleware/auth.py (lines 20-35)</div>
+                <div class="terminal-line"><br></div>
+                <div class="terminal-line">
+                    <span class="prompt">></span> <span class="command">exit</span>
+                </div>
+                <div class="terminal-line output">Goodbye! 👋</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison">
+        <div class="container">
+            <h2>How Does It Compare?</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>DevCLI</th>
+                        <th>Claudish</th>
+                        <th>Claude Code</th>
+                        <th>Copilot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Cost</strong></td>
+                        <td><span class="checkmark">✓</span> Free</td>
+                        <td>API costs</td>
+                        <td>$20/month</td>
+                        <td>$10/month</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Privacy</strong></td>
+                        <td><span class="checkmark">✓</span> 100% local</td>
+                        <td>Cloud</td>
+                        <td>Cloud</td>
+                        <td>Cloud</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dependencies</strong></td>
+                        <td><span class="checkmark">✓</span> Standalone</td>
+                        <td>Needs Claude Code</td>
+                        <td>Standalone</td>
+                        <td>Needs IDE</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Models</strong></td>
+                        <td><span class="checkmark">✓</span> Any Ollama</td>
+                        <td>OpenRouter</td>
+                        <td>Anthropic only</td>
+                        <td>OpenAI only</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Interactive</strong></td>
+                        <td><span class="checkmark">✓</span> Built-in</td>
+                        <td>Via Claude Code</td>
+                        <td><span class="checkmark">✓</span></td>
+                        <td><span class="cross">✗</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Offline</strong></td>
+                        <td><span class="checkmark">✓</span> Yes</td>
+                        <td><span class="cross">✗</span></td>
+                        <td><span class="cross">✗</span></td>
+                        <td><span class="cross">✗</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>Made with ❤️ by developers, for developers</p>
+            <p style="margin-top: 20px;">
+                <a href="https://github.com/yourusername/devcli">GitHub</a> • 
+                <a href="https://github.com/yourusername/devcli/blob/main/COMMANDS.md">Documentation</a> • 
+                <a href="https://github.com/yourusername/devcli/blob/main/LICENSE">MIT License</a>
+            </p>
+            <p style="margin-top: 20px; color: #666;">
+                DevCLI v0.3.0 • Powered by <a href="https://ollama.ai">Ollama</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
