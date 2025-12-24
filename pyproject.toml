@@ -4,20 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "devcli"
-version = "0.1.0"
-description = "An open-source AI coding assistant that works with any LLM"
-authors = [{name = "DevCLI Contributors"}]
+version = "0.3.1"
+description = "Simple, free, local-first AI coding assistant. Perfect for beginners."
+authors = [{name = "Donald", email = "your-email@example.com"}]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 license = {text = "MIT"}
-keywords = ["ai", "llm", "cli", "coding-assistant", "developer-tools"]
+keywords = ["ai", "llm", "cli", "coding-assistant", "ollama", "local-first", "privacy"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Environment :: Console",
 ]
 
 dependencies = [
@@ -36,6 +41,12 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
 ]
+
+[project.urls]
+Homepage = "https://YOUR_GITHUB_USERNAME.github.io/devcli"
+Repository = "https://github.com/YOUR_GITHUB_USERNAME/devcli"
+Documentation = "https://github.com/YOUR_GITHUB_USERNAME/devcli/blob/main/COMMANDS.md"
+"Bug Tracker" = "https://github.com/YOUR_GITHUB_USERNAME/devcli/issues"
 
 [project.scripts]
 devcli = "devcli.cli:app"

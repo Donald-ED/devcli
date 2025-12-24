@@ -50,11 +50,14 @@ Automatically finds and configures your Ollama models. No manual setup!
 ### Installation
 
 ```bash
-# Install DevCLI
-pip install devcli  # Coming to PyPI soon!
+# Install DevCLI from PyPI (recommended)
+pip install devcli
 
-# Or install from source
-git clone https://github.com/yourusername/devcli.git
+# Or use quick install script
+curl -sSL https://raw.githubusercontent.com/YOUR_USERNAME/devcli/main/install.sh | bash
+
+# Or install from source for development
+git clone https://github.com/YOUR_USERNAME/devcli.git
 cd devcli
 pip install -e .
 ```
