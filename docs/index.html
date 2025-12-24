@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="DevCLI - Simple, free, local-first AI coding assistant. Perfect for beginners.">
+    <meta name="description" content="DevCLI - Simple, free, local-first AI coding assistant. Install with pip install devcli-ai">
     <title>DevCLI - Simple AI Coding Assistant</title>
     <style>
         * {
@@ -88,7 +88,33 @@
         .hero .subtitle {
             font-size: 1.1rem;
             color: #6a737d;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
+        }
+
+        /* NEW: Install command highlight */
+        .install-box {
+            background: #f6f8fa;
+            border: 2px solid #d1d5da;
+            border-radius: 8px;
+            padding: 20px 30px;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .install-box code {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 1.3rem;
+            color: #0366d6;
+            font-weight: 600;
+        }
+
+        .install-box .copy-hint {
+            font-size: 0.9rem;
+            color: #6a737d;
         }
 
         .cta-buttons {
@@ -128,6 +154,15 @@
         .btn-secondary:hover {
             background: #f6f8fa;
             border-color: #c1c6cc;
+        }
+
+        /* NEW: PyPI badge */
+        .pypi-badge {
+            margin-top: 20px;
+        }
+
+        .pypi-badge img {
+            height: 20px;
         }
 
         /* Terminal Demo */
@@ -362,6 +397,10 @@
                 font-size: 1.1rem;
             }
 
+            .install-box code {
+                font-size: 1rem;
+            }
+
             .nav-links {
                 display: none;
             }
@@ -391,7 +430,7 @@
                     <li><a href="#features">Features</a></li>
                     <li><a href="#demo">Demo</a></li>
                     <li><a href="#start">Get Started</a></li>
-                    <li><a href="https://github.com/YOUR_GITHUB_USERNAME/devcli">GitHub</a></li>
+                    <li><a href="https://github.com/Donald-ED/devcli">GitHub</a></li>
                 </ul>
             </nav>
         </div>
@@ -402,10 +441,26 @@
         <div class="container">
             <h1>Simple AI Coding Assistant</h1>
             <p class="tagline">Ask questions about your code. Get instant answers.</p>
-            <p class="subtitle">100% free • 100% private • Works offline with Ollama</p>
+            <p class="subtitle">100% free • 100% private • Now on PyPI! 🎉</p>
+
+            <!-- NEW: Prominent install command -->
+            <div class="install-box">
+                <code>pip install devcli-ai</code>
+            </div>
+
             <div class="cta-buttons">
-                <a href="https://github.com/YOUR_GITHUB_USERNAME/devcli" class="btn btn-primary">Get Started</a>
-                <a href="https://github.com/YOUR_GITHUB_USERNAME/devcli" class="btn btn-secondary">View on GitHub</a>
+                <a href="https://pypi.org/project/devcli-ai/" class="btn btn-primary">View on PyPI</a>
+                <a href="https://github.com/Donald-ED/devcli" class="btn btn-secondary">View on GitHub</a>
+            </div>
+
+            <!-- NEW: PyPI badge -->
+            <div class="pypi-badge">
+                <a href="https://pypi.org/project/devcli-ai/">
+                    <img src="https://img.shields.io/pypi/v/devcli-ai.svg" alt="PyPI version">
+                </a>
+                <a href="https://pypi.org/project/devcli-ai/">
+                    <img src="https://img.shields.io/pypi/dm/devcli-ai.svg" alt="Downloads">
+                </a>
             </div>
         </div>
     </section>
@@ -420,6 +475,11 @@
                     <div class="terminal-dot dot-yellow"></div>
                     <div class="terminal-dot dot-green"></div>
                 </div>
+                <div class="terminal-line">
+                    <span class="prompt">$</span> <span class="command">pip install devcli-ai</span>
+                </div>
+                <div class="terminal-line output">Successfully installed devcli-ai-0.3.1</div>
+                <div class="terminal-line"><br></div>
                 <div class="terminal-line">
                     <span class="prompt">$</span> <span class="command">devcli init</span>
                 </div>
@@ -467,7 +527,7 @@
 
                 <div class="feature-card">
                     <h3><span class="emoji">⚡</span> Dead Simple</h3>
-                    <p>Just type <code>devcli</code> and start chatting. No complex setup or configuration.</p>
+                    <p>Just <code>pip install devcli-ai</code> and start chatting. No complex setup or configuration.</p>
                 </div>
 
                 <div class="feature-card">
@@ -515,6 +575,12 @@
                         <td>Cloud</td>
                     </tr>
                     <tr>
+                        <td><strong>Installation</strong></td>
+                        <td><span class="check">✓</span> pip install</td>
+                        <td>pip install</td>
+                        <td>Download app</td>
+                    </tr>
+                    <tr>
                         <td><strong>Simplicity</strong></td>
                         <td><span class="check">✓</span> Just chat</td>
                         <td>Many features</td>
@@ -525,12 +591,6 @@
                         <td><span class="cross">✗</span> Q&A only</td>
                         <td><span class="check">✓</span> Full editing</td>
                         <td><span class="check">✓</span> Full editing</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Setup Time</strong></td>
-                        <td><span class="check">✓</span> &lt; 1 min</td>
-                        <td>~5 min</td>
-                        <td>~10 min</td>
                     </tr>
                     <tr>
                         <td><strong>Best For</strong></td>
@@ -552,13 +612,13 @@
             <h2>Get Started in 60 Seconds</h2>
             <div class="steps">
                 <div class="step">
-                    <h3>1. Install Ollama</h3>
-                    <code># Visit https://ollama.ai and install<br>ollama pull llama3.1</code>
+                    <h3>1. Install DevCLI from PyPI</h3>
+                    <code>pip install devcli-ai</code>
                 </div>
 
                 <div class="step">
-                    <h3>2. Install DevCLI</h3>
-                    <code>pip install devcli  # Coming to PyPI soon!<br><br># Or from source:<br>git clone https://github.com/YOUR_GITHUB_USERNAME/devcli.git<br>cd devcli<br>pip install -e .</code>
+                    <h3>2. Install Ollama & Pull a Model</h3>
+                    <code># Visit https://ollama.ai and install<br>ollama pull llama3.1</code>
                 </div>
 
                 <div class="step">
@@ -574,12 +634,13 @@
         <div class="container">
             <p>Made by developers, for developers</p>
             <p style="margin-top: 15px;">
-                <a href="https://github.com/YOUR_GITHUB_USERNAME/devcli">GitHub</a> • 
-                <a href="https://github.com/YOUR_GITHUB_USERNAME/devcli/blob/main/COMMANDS.md">Documentation</a> • 
-                <a href="https://github.com/YOUR_GITHUB_USERNAME/devcli/blob/main/LICENSE">MIT License</a>
+                <a href="https://pypi.org/project/devcli-ai/">PyPI</a> •
+                <a href="https://github.com/Donald-ED/devcli">GitHub</a> •
+                <a href="https://github.com/Donald-ED/devcli/blob/main/COMMANDS.md">Documentation</a> •
+                <a href="https://github.com/Donald-ED/devcli/blob/main/LICENSE">MIT License</a>
             </p>
             <p style="margin-top: 15px; font-size: 0.9rem;">
-                DevCLI v0.3.1 • Powered by <a href="https://ollama.ai">Ollama</a>
+                DevCLI v0.3.1 • Available on <a href="https://pypi.org/project/devcli-ai/">PyPI</a>
             </p>
         </div>
     </footer>
