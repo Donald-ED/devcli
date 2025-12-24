@@ -2,6 +2,22 @@
 
 All notable changes to DevCLI will be documented in this file.
 
+## [0.3.1] - 2024-12-24
+
+### Added
+- **`/models` command** - List all available models in interactive mode
+- **Better system prompt** - Significantly reduced hallucination
+
+### Fixed
+- AI hallucination issues (was making up code/libraries that don't exist)
+- Missing `/models` command in help text
+- System prompt now explicitly tells AI to stay grounded in project context
+
+### Changed
+- Welcome panel now shows `/models` command
+- Help command now includes `/models`
+- System prompt is much more careful and accurate
+
 ## [0.3.0] - 2024-12-24
 
 ### Added - Polish & Claudish-Inspired Features ✨

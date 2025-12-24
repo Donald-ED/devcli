@@ -90,7 +90,9 @@ def interactive_chat() -> None:
         f"  [cyan]clear[/cyan] - Clear screen\n"
         f"  [cyan]help[/cyan] - Show help\n"
         f"  [cyan]/model <name>[/cyan] - Switch model\n"
-        f"  [cyan]/nocontext[/cyan] - Toggle project context\n\n"
+        f"  [cyan]/models[/cyan] - List available models\n"
+        f"  [cyan]/nocontext[/cyan] - Toggle project context\n"
+        f"  [cyan]/reset[/cyan] - Reset conversation\n\n"
         f"Just type your question and press Enter!",
         title="[bold]DevCLI Interactive Chat[/bold]",
         border_style="blue"
@@ -123,6 +125,7 @@ def interactive_chat() -> None:
                 console.print("  [cyan]exit/quit[/cyan] - Exit chat")
                 console.print("  [cyan]clear[/cyan] - Clear screen")
                 console.print("  [cyan]/model <name>[/cyan] - Switch to different model")
+                console.print("  [cyan]/models[/cyan] - List available models")
                 console.print("  [cyan]/nocontext[/cyan] - Toggle project context on/off")
                 console.print("  [cyan]/reset[/cyan] - Reset conversation history")
                 console.print()
@@ -152,6 +155,14 @@ def interactive_chat() -> None:
                 console.print("[green]✓[/green] Conversation history reset\n")
                 continue
             
+            if user_input.lower() == '/models':
+                console.print("\n[bold]Available Models:[/bold]\n")
+                for name, model_cfg in cfg.models.items():
+                    current = "← current" if name == model_name else ""
+                    console.print(f"  [cyan]{name}[/cyan] ({model_cfg.model_name}) {current}")
+                console.print(f"\n[dim]Use '/model <name>' to switch[/dim]\n")
+                continue
+            
             # Build the message with context if enabled
             if use_context and project_context:
                 context_prompt = project_context.to_prompt(max_tokens=cfg.max_tokens // 2)
@@ -171,7 +182,20 @@ Please answer based on the project context above when relevant."""
                 try:
                     response = provider.chat(
                         message=full_question,
-                        system_prompt="You are a helpful AI coding assistant. Be concise and clear. When answering questions about code, provide specific file names and line numbers when possible."
+                        system_prompt="""You are a helpful AI coding assistant for the DevCLI project.
+
+CRITICAL RULES:
+- Only answer based on the project files provided in the context
+- If you don't see something in the context, say "I don't see that in the project files"
+- NEVER make up code, file paths, or line numbers that aren't in the context
+- NEVER assume libraries or frameworks that aren't shown
+- When referencing code, quote the exact file path and content you see
+- Be concise and accurate - if unsure, say so
+
+When answering:
+- Provide specific file names and line numbers from the context
+- Quote relevant code snippets directly
+- If the answer isn't in the context, admit it"""
                     )
                 except Exception as e:
                     console.print(f"[red]✗[/red] Error: {e}\n")
