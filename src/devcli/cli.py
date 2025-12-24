@@ -10,6 +10,9 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.markdown import Markdown
 from pathlib import Path
+import readline
+import os
+import atexit
 from devcli import __version__
 from devcli import config
 from devcli.providers.ollama import OllamaProvider
@@ -29,89 +32,76 @@ console = Console()
 
 def interactive_chat() -> None:
     """
-    Start an interactive chat session.
-    
-    This is called when you run 'devcli' with no arguments.
-    It's like a REPL for chatting with AI!
+    Enhanced interactive chat with smart context, git tracking, and file operations.
     """
-    # Get config
+    from devcli.core.smart_context import SmartContext
+    from devcli.core.git_tracker import GitTracker
+    from devcli.core.file_ops import FileOpsManager
+    
     cfg = config.get_config()
     
-    # Check if we have a default model configured
     if not cfg.models:
         console.print("[red]✗[/red] No models configured!")
-        console.print("\n[yellow]Add a model first:[/yellow]")
+        console.print("\n[yellow]Add a model:[/yellow]")
         console.print("  devcli model-add llama3 --provider ollama --model llama3.1")
-        console.print("  devcli models-sync  # Or auto-discover")
         return
     
     model_name = cfg.default_model
     if model_name not in cfg.models:
-        model_name = list(cfg.models.keys())[0]  # Use first available
+        model_name = list(cfg.models.keys())[0]
     
     model_cfg = cfg.models[model_name]
     
-    # Only Ollama supported for now
     if model_cfg.provider != "ollama":
-        console.print(f"[red]✗[/red] Interactive mode only supports Ollama provider")
-        console.print(f"[yellow]Current default model uses: {model_cfg.provider}[/yellow]")
+        console.print(f"[red]✗[/red] Interactive mode only supports Ollama")
         return
     
-    # Create provider
     provider = OllamaProvider(model_cfg.model_name)
     
-    # Check if Ollama is running
     if not provider.is_available():
         console.print("[red]✗[/red] Cannot connect to Ollama!")
-        console.print("\n[yellow]Make sure Ollama is running:[/yellow]")
-        console.print("  1. Install from: https://ollama.ai")
-        console.print("  2. Start: ollama serve")
-        console.print(f"  3. Pull model: ollama pull {model_cfg.model_name}")
+        console.print("\n[yellow]Make sure Ollama is running[/yellow]")
         return
     
-    # Try to load project context
-    project_context = None
-    context_file = Path.cwd() / ".devcli" / "context.json"
-    if context_file.exists():
-        try:
-            builder = ContextBuilder(Path.cwd())
-            project_context = builder.load_context(context_file)
-        except Exception:
-            pass  # Silently fail, not critical
+    # Initialize smart systems
+    console.print("\n[bold]Initializing...[/bold]")
+    smart_ctx = SmartContext(Path.cwd())
+    git_tracker = GitTracker(Path.cwd())
+    file_ops = FileOpsManager(Path.cwd())
     
-    # Welcome message
+    console.print(f"[green]✓[/green] Smart context ready")
+    is_git = git_tracker.is_git_repo()
+    if is_git:
+        console.print(f"[green]✓[/green] Git repository detected")
+    
+    # Welcome
     console.print()
     console.print(Panel(
-        f"[bold blue]Welcome to DevCLI![/bold blue] 🤖\n\n"
-        f"Model: [cyan]{model_name}[/cyan] ({model_cfg.model_name})\n"
-        f"Project context: [cyan]{'✓ loaded' if project_context else '✗ none (run: devcli init)'}[/cyan]\n\n"
-        f"[dim]Commands:[/dim]\n"
-        f"  [cyan]exit[/cyan] or [cyan]quit[/cyan] - Exit chat\n"
-        f"  [cyan]clear[/cyan] - Clear screen\n"
-        f"  [cyan]help[/cyan] - Show help\n"
-        f"  [cyan]/model <name>[/cyan] - Switch model\n"
-        f"  [cyan]/models[/cyan] - List available models\n"
-        f"  [cyan]/nocontext[/cyan] - Toggle project context\n"
-        f"  [cyan]/reset[/cyan] - Reset conversation\n\n"
-        f"Just type your question and press Enter!",
-        title="[bold]DevCLI Interactive Chat[/bold]",
+        f"[bold blue]DevCLI Enhanced[/bold blue] 🚀\n\n"
+        f"Model: [cyan]{model_name}[/cyan]\n"
+        f"Smart context: [green]✓ enabled[/green]\n\n"
+        f"[dim]Commands: /help for list[/dim]",
         border_style="blue"
     ))
     console.print()
     
-    # Chat loop
-    use_context = project_context is not None
+    histfile = os.path.expanduser("~/.devcli_history")
+    try:
+        readline.read_history_file(histfile)
+        readline.set_history_length(1000)
+    except FileNotFoundError:
+        pass
+    atexit.register(readline.write_history_file, histfile)
+    
     conversation_history = []
     
     while True:
         try:
-            # Get user input
             user_input = console.input("[bold green]>[/bold green] ").strip()
             
             if not user_input:
                 continue
             
-            # Handle special commands
             if user_input.lower() in ['exit', 'quit', 'q']:
                 console.print("\n[cyan]Goodbye! 👋[/cyan]\n")
                 break
@@ -120,15 +110,16 @@ def interactive_chat() -> None:
                 console.clear()
                 continue
             
-            if user_input.lower() == 'help':
-                console.print("\n[bold]Available Commands:[/bold]")
-                console.print("  [cyan]exit/quit[/cyan] - Exit chat")
-                console.print("  [cyan]clear[/cyan] - Clear screen")
-                console.print("  [cyan]/model <name>[/cyan] - Switch to different model")
-                console.print("  [cyan]/models[/cyan] - List available models")
-                console.print("  [cyan]/nocontext[/cyan] - Toggle project context on/off")
-                console.print("  [cyan]/reset[/cyan] - Reset conversation history")
-                console.print()
+            if user_input.lower() in ['help', '/help']:
+                console.print("\n[bold]Commands:[/bold]")
+                console.print("  exit/quit - Exit")
+                console.print("  /model <n> - Switch model")
+                console.print("  /models - List models")
+                console.print("  /files - Show repo structure")
+                console.print("  /changes - Show git changes")
+                console.print("  /commits - Show commits")
+                console.print("  /read <file> - Read file")
+                console.print("  /reset - Reset conversation\n")
                 continue
             
             if user_input.startswith('/model '):
@@ -137,86 +128,105 @@ def interactive_chat() -> None:
                     model_name = new_model
                     model_cfg = cfg.models[model_name]
                     provider = OllamaProvider(model_cfg.model_name)
-                    conversation_history = []  # Reset history
-                    console.print(f"[green]✓[/green] Switched to model: {model_name}\n")
+                    console.print(f"[green]✓[/green] Switched to: {model_name}\n")
                 else:
-                    console.print(f"[red]✗[/red] Model '{new_model}' not found")
-                    console.print(f"[dim]Available: {', '.join(cfg.models.keys())}[/dim]\n")
+                    console.print(f"[red]✗[/red] Not found\n")
                 continue
             
-            if user_input.lower() == '/nocontext':
-                use_context = not use_context
-                status = "enabled" if use_context else "disabled"
-                console.print(f"[green]✓[/green] Project context {status}\n")
+            if user_input.lower() == '/models':
+                console.print("\n[bold]Models:[/bold]")
+                for name, mcfg in cfg.models.items():
+                    mark = "← current" if name == model_name else ""
+                    console.print(f"  {name} ({mcfg.model_name}) {mark}")
+                console.print()
+                continue
+            
+            if user_input.lower() == '/files':
+                console.print("\n" + smart_ctx.get_repo_structure() + "\n")
+                continue
+            
+            if user_input.lower() == '/changes':
+                if not is_git:
+                    console.print("[yellow]Not a git repo[/yellow]\n")
+                    continue
+                console.print("\n[bold]Changes:[/bold]")
+                for ch in git_tracker.get_uncommitted_changes():
+                    console.print(f"  {ch.status} {ch.path}")
+                console.print()
+                continue
+            
+            if user_input.lower() == '/commits':
+                if not is_git:
+                    console.print("[yellow]Not a git repo[/yellow]\n")
+                    continue
+                console.print("\n[bold]Recent:[/bold]")
+                for c in git_tracker.get_recent_commits(5):
+                    console.print(f"  {c['hash']} - {c['message']}")
+                console.print()
+                continue
+            
+            if user_input.startswith('/read '):
+                fp = user_input[6:].strip()
+                console.print(f"\n[bold]{fp}:[/bold]\n")
+                content = file_ops.read_file(Path(fp), add_line_numbers=True)
+                if content:
+                    console.print(content + "\n")
+                else:
+                    console.print("[red]✗[/red] Could not read\n")
                 continue
             
             if user_input.lower() == '/reset':
                 conversation_history = []
-                console.print("[green]✓[/green] Conversation history reset\n")
+                console.print("[green]✓[/green] Reset\n")
                 continue
             
-            if user_input.lower() == '/models':
-                console.print("\n[bold]Available Models:[/bold]\n")
-                for name, model_cfg in cfg.models.items():
-                    current = "← current" if name == model_name else ""
-                    console.print(f"  [cyan]{name}[/cyan] ({model_cfg.model_name}) {current}")
-                console.print(f"\n[dim]Use '/model <name>' to switch[/dim]\n")
-                continue
+            # Build context
+            context = smart_ctx.get_context_for_question(user_input)
+            if is_git and any(w in user_input.lower() for w in ['changed', 'modified', 'diff']):
+                context += "\n" + git_tracker.format_context_string()
             
-            # Build the message with context if enabled
-            if use_context and project_context:
-                context_prompt = project_context.to_prompt(max_tokens=cfg.max_tokens // 2)
-                full_question = f"""{context_prompt}
+            full_question = f"""{context}
 
 ---
 
 User Question: {user_input}
 
-Please answer based on the project context above when relevant."""
-            else:
-                full_question = user_input
+Answer based on the files above. Look at line numbers when asking about specific lines."""
             
-            # Get AI response
             console.print()
             with console.status("[bold blue]Thinking...", spinner="dots"):
                 try:
                     response = provider.chat(
                         message=full_question,
-                        system_prompt="""You are a helpful AI coding assistant for the DevCLI project.
+                        system_prompt="""You are a helpful AI coding assistant.
 
-CRITICAL RULES:
-- Only answer based on the project files provided in the context
-- If you don't see something in the context, say "I don't see that in the project files"
-- NEVER make up code, file paths, or line numbers that aren't in the context
-- NEVER assume libraries or frameworks that aren't shown
-- When referencing code, quote the exact file path and content you see
-- Be concise and accurate - if unsure, say so
+The project files are shown above with:
+1. Repository structure (all files)
+2. Full content of mentioned files (with line numbers)
 
-When answering:
-- Provide specific file names and line numbers from the context
-- Quote relevant code snippets directly
-- If the answer isn't in the context, admit it"""
+Guidelines:
+- Search the provided content to answer questions
+- For line numbers, look at the numbered lines
+- Be confident when you see the information
+- Reference specific files and line numbers
+
+The files are complete. Trust what you see."""
                     )
                 except Exception as e:
-                    console.print(f"[red]✗[/red] Error: {e}\n")
+                    console.print(f"[red]✗[/red] {e}\n")
                     continue
             
-            # Display response
             console.print(Markdown(response))
             console.print()
-            
-            # Add to history (for future conversation features)
-            conversation_history.append({
-                'user': user_input,
-                'assistant': response
-            })
+            conversation_history.append({'user': user_input, 'assistant': response})
             
         except KeyboardInterrupt:
             console.print("\n\n[cyan]Use 'exit' to quit[/cyan]\n")
-            continue
         except EOFError:
-            console.print("\n[cyan]Goodbye! 👋[/cyan]\n")
+            console.print("\n\n[cyan]Goodbye! 👋[/cyan]\n")
             break
+
+
 
 
 # Rich makes our terminal output beautiful with colors and formatting

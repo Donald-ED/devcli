@@ -34,7 +34,11 @@ class FileScanner:
         '__pycache__', '.pytest_cache', '.mypy_cache',
         'dist', 'build', '.next', '.nuxt',
         'target', 'out', 'bin', 'obj',
-        '.idea', '.vscode', '.DS_Store'
+        '.idea', '.vscode', '.DS_Store',
+        # Common project folders that aren't part of the main code
+        'claudish-main', 'landingpage', 'scripts', 'skills',
+        'docs', 'examples', 'test-data', 'tmp', 'temp',
+        '.egg-info', 'htmlcov', 'coverage'
     }
     
     # File patterns to ignore
@@ -75,6 +79,34 @@ class FileScanner:
         self.ignore_patterns = self.DEFAULT_IGNORE_PATTERNS.copy()
         if ignore_patterns:
             self.ignore_patterns.update(ignore_patterns)
+        
+        # Load .devcliignore if it exists
+        self._load_devcliignore()
+    
+    def _load_devcliignore(self) -> None:
+        """Load ignore patterns from .devcliignore file if it exists."""
+        ignore_file = self.root_path / '.devcliignore'
+        if not ignore_file.exists():
+            return
+        
+        try:
+            with open(ignore_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    # Skip empty lines and comments
+                    if not line or line.startswith('#'):
+                        continue
+                    
+                    # If line ends with /, it's a directory
+                    if line.endswith('/'):
+                        dir_name = line.rstrip('/')
+                        self.ignore_dirs.add(dir_name)
+                    else:
+                        # Otherwise it's a file pattern
+                        self.ignore_patterns.add(line)
+        except Exception:
+            # If we can't read the file, just continue with defaults
+            pass
     
     def should_ignore_dir(self, dir_path: Path) -> bool:
         """
